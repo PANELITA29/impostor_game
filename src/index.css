@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --color-canvas: 11 14 20;
+    --color-surface: 21 27 38;
+    --color-elevated: 30 38 54;
+    --color-accent-primary: 0 229 160;
+    --color-accent-impostor: 255 59 92;
+    --color-accent-chaos: 168 85 247;
+    --color-accent-warning: 255 184 0;
+  }
+
+  [data-theme="cyberpunk"] {
+    --color-canvas: 8 7 18;
+    --color-surface: 19 16 38;
+    --color-elevated: 32 26 64;
+    --color-accent-primary: 0 240 255;
+    --color-accent-impostor: 255 0 127;
+    --color-accent-chaos: 255 230 0;
+    --color-accent-warning: 255 184 0;
+  }
+
+  [data-theme="crimson"] {
+    --color-canvas: 14 6 8;
+    --color-surface: 28 13 17;
+    --color-elevated: 45 22 28;
+    --color-accent-primary: 255 51 85;
+    --color-accent-impostor: 255 149 0;
+    --color-accent-chaos: 185 28 28;
+    --color-accent-warning: 245 158 11;
+  }
+
+  [data-theme="amethyst"] {
+    --color-canvas: 11 7 22;
+    --color-surface: 23 15 44;
+    --color-elevated: 38 26 71;
+    --color-accent-primary: 179 136 255;
+    --color-accent-impostor: 0 229 255;
+    --color-accent-chaos: 255 64 129;
+    --color-accent-warning: 255 215 0;
+  }
+
+  body {
+    background-color: rgb(var(--color-canvas));
+    color: #F8FAFC;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.3s ease;
+  }
+
+  /* =========================================================================
+     CUSTOM SLEEK NEON SCROLLBAR
+     ========================================================================= */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--color-elevated), 0.9) transparent;
+  }
+
+  /* WebKit (Chrome, Edge, Safari, Opera) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-elevated), 0.9);
+    border-radius: 9999px;
+    border: 1px solid rgba(var(--color-surface), 0.6);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--color-accent-primary), 0.8);
+    box-shadow: 0 0 10px rgba(var(--color-accent-primary), 0.6);
+  }
+
+  /* Eliminar los botones de flecha de Windows */
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}

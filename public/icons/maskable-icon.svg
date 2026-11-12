@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Safe zone for maskable icon: keep content centered within 80% circle -->
+  <rect width="512" height="512" fill="#0B0E14"/>
+  <circle cx="256" cy="256" r="190" fill="#151B26" stroke="#1E2636" stroke-width="8"/>
+  <path d="M140 210C140 168 186 136 256 136C326 136 372 168 372 210C372 292 310 358 256 378C202 358 140 292 140 210Z" fill="#0B0E14" stroke="#00E5A0" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M170 230C194 220 218 224 230 244" stroke="#FF3B5C" stroke-width="13" stroke-linecap="round"/>
+  <path d="M342 230C318 220 294 224 282 244" stroke="#FF3B5C" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="202" cy="244" r="13" fill="#F8FAFC"/>
+  <circle cx="310" cy="244" r="13" fill="#F8FAFC"/>
+  <path d="M224 310C234 320 256 324 280 320" stroke="#94A3B8" stroke-width="9" stroke-linecap="round"/>
+</svg>
+
