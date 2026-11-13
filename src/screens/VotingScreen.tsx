@@ -131,6 +131,7 @@ export const VotingScreen: React.FC = () => {
 
   const handleConfirmVote = () => {
     if (!selectedCandidate) return;
+    audioManager.playSfx('bonk');
     setIsConfirmModalOpen(false);
     submitVote(selectedCandidate.playerId);
   };

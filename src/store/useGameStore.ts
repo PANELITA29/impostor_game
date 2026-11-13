@@ -548,7 +548,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     if (isCorrect) {
       // Impostor successfully guessed and stole the victory!
-      audioManager.playSfx('reveal');
+      audioManager.playSfx('impostor_win');
       const voteResult: VoteResult = {
         votedPlayerId: roundState.voteResult?.votedPlayerId || '',
         votedPlayerName: roundState.voteResult?.votedPlayerName || 'Impostor',

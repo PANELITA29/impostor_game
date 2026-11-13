@@ -11,7 +11,9 @@ export type SfxType =
   | 'tick_warning'
   | 'time_up'
   | 'impostor_reveal'
-  | 'fart';
+  | 'fart'
+  | 'bonk'
+  | 'impostor_win';
 
 class AudioManager {
   private ctx: AudioContext | null = null;
@@ -25,10 +27,15 @@ class AudioManager {
   private lastTapTimestamp: number = 0;
   private fartAudio: HTMLAudioElement | null = null;
   private lastFartTimestamp: number = 0;
+  private lastImpostorWinTimestamp: number = 0;
+  private bonkAudio: HTMLAudioElement | null = null;
+  private impostorWinAudio: HTMLAudioElement | null = null;
 
   // Web Audio pre-decoded audio buffers (0ms instantaneous latency)
   private buttonBuffer: AudioBuffer | null = null;
   private fartBuffer: AudioBuffer | null = null;
+  private bonkBuffer: AudioBuffer | null = null;
+  private impostorWinBuffer: AudioBuffer | null = null;
   private isBuffersLoading: boolean = false;
 
   // Ambient pad oscillator nodes (for procedural synthesis mode)
@@ -57,6 +64,10 @@ class AudioManager {
           }
           this.fartAudio = new Audio('/sounds/fart.mp3');
           this.fartAudio.preload = 'auto';
+          this.bonkAudio = new Audio('/sounds/bonk.mp3');
+          this.bonkAudio.preload = 'auto';
+          this.impostorWinAudio = new Audio('/sounds/rdr2-low-honor.mp3');
+          this.impostorWinAudio.preload = 'auto';
         }
       } catch {
         // Fallback for non-browser/test runtimes
@@ -136,6 +147,14 @@ class AudioManager {
     loadBuffer('/sounds/fart.mp3').then((buf) => {
       if (buf) this.fartBuffer = buf;
     });
+
+    loadBuffer('/sounds/bonk.mp3').then((buf) => {
+      if (buf) this.bonkBuffer = buf;
+    });
+
+    loadBuffer('/sounds/rdr2-low-honor.mp3').then((buf) => {
+      if (buf) this.impostorWinBuffer = buf;
+    });
   }
 
   /**
@@ -150,6 +169,12 @@ class AudioManager {
     });
     if (this.fartAudio) {
       this.fartAudio.volume = muted ? 0 : this.sfxVolume;
+    }
+    if (this.bonkAudio) {
+      this.bonkAudio.volume = muted ? 0 : this.sfxVolume;
+    }
+    if (this.impostorWinAudio) {
+      this.impostorWinAudio.volume = muted ? 0 : this.sfxVolume;
     }
 
     // Update active debate file music
@@ -294,6 +319,70 @@ class AudioManager {
       } catch {
         // Fall through to procedural fallback
       }
+    }
+
+    // 3. Bonk sound effect (for confirming expulsion)
+    if (type === 'bonk') {
+      if (this.bonkBuffer && ctx) {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          const source = ctx.createBufferSource();
+          source.buffer = this.bonkBuffer;
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(this.sfxVolume, ctx.currentTime);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+          return;
+        } catch {}
+      }
+
+      try {
+        if (!this.bonkAudio && typeof Audio !== 'undefined') {
+          this.bonkAudio = new Audio('/sounds/bonk.mp3');
+        }
+        if (this.bonkAudio) {
+          this.bonkAudio.volume = this.isMuted ? 0 : this.sfxVolume;
+          this.bonkAudio.currentTime = 0;
+          this.bonkAudio.play().catch(() => {});
+          return;
+        }
+      } catch {}
+    }
+
+    // 4. Impostor Win sound effect (RDR2 Low Honor)
+    if (type === 'impostor_win') {
+      const nowMs = Date.now();
+      if (nowMs - this.lastImpostorWinTimestamp < 1000) {
+        return;
+      }
+      this.lastImpostorWinTimestamp = nowMs;
+
+      if (this.impostorWinBuffer && ctx) {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          const source = ctx.createBufferSource();
+          source.buffer = this.impostorWinBuffer;
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(Math.min(1, this.sfxVolume * 1.1), ctx.currentTime);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+          return;
+        } catch {}
+      }
+
+      try {
+        if (!this.impostorWinAudio && typeof Audio !== 'undefined') {
+          this.impostorWinAudio = new Audio('/sounds/rdr2-low-honor.mp3');
+        }
+        if (this.impostorWinAudio) {
+          this.impostorWinAudio.volume = this.isMuted ? 0 : Math.min(1, this.sfxVolume * 1.1);
+          this.impostorWinAudio.currentTime = 0;
+          this.impostorWinAudio.play().catch(() => {});
+          return;
+        }
+      } catch {}
     }
 
     // Procedural sound synthesis via Web Audio API fallback

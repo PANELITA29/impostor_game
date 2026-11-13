@@ -18,9 +18,13 @@ export const ResolutionScreen: React.FC = () => {
   const { roundState, startRound, setScreen } = useGameStore();
 
   React.useEffect(() => {
-    // Play dramatic fart sound effect right as the results screen appears
+    // If impostors won, play the RDR2 Low Honor sound effect! Otherwise fart on innocent reveal
     const timer = setTimeout(() => {
-      audioManager.playSfx('fart');
+      if (roundState?.voteResult && !roundState.voteResult.innocentsWon) {
+        audioManager.playSfx('impostor_win');
+      } else {
+        audioManager.playSfx('fart');
+      }
     }, 120);
 
     return () => clearTimeout(timer);
