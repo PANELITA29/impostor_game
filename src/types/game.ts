@@ -30,6 +30,7 @@ export interface UserPreferences {
   haptics: boolean;
   wakeLockEnabled: boolean;
   debateMusicTrack: string;
+  customHeroImage?: string | null;
 }
 
 export interface Player {

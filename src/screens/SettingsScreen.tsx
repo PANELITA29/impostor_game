@@ -25,6 +25,9 @@ import {
   Music,
   Play,
   Square,
+  Image as ImageIcon,
+  Upload,
+  RotateCcw,
 } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
@@ -48,6 +51,54 @@ export const SettingsScreen: React.FC = () => {
   const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Solo se permiten archivos de imagen.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to 320x320 max square to keep size small (~25kb)
+        const canvas = document.createElement('canvas');
+        const maxDim = 320;
+        canvas.width = maxDim;
+        canvas.height = maxDim;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Crop to center square
+        const minSide = Math.min(img.width, img.height);
+        const startX = (img.width - minSide) / 2;
+        const startY = (img.height - minSide) / 2;
+
+        ctx.drawImage(img, startX, startY, minSide, minSide, 0, 0, maxDim, maxDim);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        updatePreferences({ customHeroImage: compressedDataUrl });
+        audioManager.playSfx('tap');
+        showToast('¡Ícono del menú actualizado!');
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so re-uploading the same file works
+    e.target.value = '';
+  };
+
+  const handleResetHeroImage = () => {
+    audioManager.playSfx('tap');
+    updatePreferences({ customHeroImage: null });
+    showToast('Ícono original restaurado.');
+  };
 
   useEffect(() => {
     const unsubscribe = audioManager.subscribePreview((trackId) => {
@@ -284,7 +335,100 @@ export const SettingsScreen: React.FC = () => {
         </Card>
 
         {/* =========================================================================
-            3. SECCIÓN: AUDIO Y MÚSICA
+            3. SECCIÓN: ÍCONO / EMBLEMA DEL MENÚ PRINCIPAL
+            ========================================================================= */}
+        <Card variant="default" className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-elevated/40">
+            <div className="flex items-center gap-2.5 text-text-primary">
+              <ImageIcon className="w-5 h-5 text-accent-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-text-primary">
+                  Ícono del Menú Principal
+                </h3>
+                <p className="text-xs text-text-secondary">
+                  Cambia el avatar central de la pantalla de inicio por cualquier foto o imagen.
+                </p>
+              </div>
+            </div>
+
+            {preferences.customHeroImage && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetHeroImage}
+                leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                className="text-xs text-accent-impostor hover:bg-accent-impostor/10 shrink-0"
+              >
+                Restaurar
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-5 pt-1">
+            {/* Live Preview Avatar Circle */}
+            <div className="relative group shrink-0">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center rounded-full bg-surface border-2 border-accent-impostor/40 shadow-[0_0_25px_rgba(var(--color-accent-impostor),0.3)] overflow-hidden">
+                <img
+                  src={preferences.customHeroImage || '/amogus-shh.svg'}
+                  alt="Vista previa del ícono"
+                  className={`w-full h-full ${
+                    preferences.customHeroImage ? 'object-cover' : 'p-2.5 object-contain'
+                  }`}
+                />
+              </div>
+
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-elevated/95 border border-accent-impostor/40 px-2 py-0.5 rounded-full text-[10px] font-code font-bold text-accent-impostor uppercase whitespace-nowrap shadow">
+                {preferences.customHeroImage ? 'Personalizado' : 'Original'}
+              </div>
+            </div>
+
+            {/* Upload Controls & Instructions */}
+            <div className="flex-1 space-y-3 text-center sm:text-left w-full">
+              <div className="space-y-1">
+                <h4 className="font-headline font-bold text-sm text-text-primary">
+                  {preferences.customHeroImage ? 'Imagen personalizada activa' : 'Usando ícono oficial Amogus'}
+                </h4>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Puedes subir una foto desde tu galería, archivo o cámara. Se ajustará y optimizará automáticamente en formato circular.
+                </p>
+              </div>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  leftIcon={<Upload className="w-4 h-4" />}
+                >
+                  {preferences.customHeroImage ? 'Cambiar Imagen' : 'Subir Imagen'}
+                </Button>
+
+                {preferences.customHeroImage && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleResetHeroImage}
+                    leftIcon={<RotateCcw className="w-4 h-4" />}
+                  >
+                    Restaurar Original
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* =========================================================================
+            4. SECCIÓN: AUDIO Y MÚSICA
             ========================================================================= */}
         <Card variant="default" className="p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between pb-1 border-b border-elevated/40">

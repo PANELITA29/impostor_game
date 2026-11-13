@@ -38,40 +38,48 @@ export const HomeScreen: React.FC = () => {
         <div className="absolute top-16 right-0 w-32 h-32 bg-accent-impostor/15 rounded-full blur-2xl pointer-events-none -z-10" />
         <div className="absolute top-20 left-0 w-28 h-28 bg-accent-chaos/15 rounded-full blur-2xl pointer-events-none -z-10" />
 
-        {/* Amogus Shhhhh Metallic Emblem Container */}
-        <div className="relative group cursor-pointer my-2 sm:my-3">
+        {/* Amogus Shhhhh / Custom Avatar Metallic Emblem Container */}
+        <div
+          onClick={() => setScreen('SETTINGS')}
+          className="relative group cursor-pointer my-2 sm:my-3"
+          title="Toca para personalizar tu ícono en Ajustes"
+        >
           <div className="absolute inset-0 rounded-full bg-gradient-to-b from-accent-impostor/30 via-transparent to-accent-primary/20 blur-2xl transition-all duration-700 group-hover:scale-110" />
           
           <div className="relative w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center rounded-full bg-surface border-2 border-accent-impostor/40 shadow-[0_0_30px_rgba(var(--color-accent-impostor),0.35)] overflow-hidden transition-transform duration-500 group-hover:scale-105 active:scale-95">
-            {/* Vivid Neon Base Character Vector */}
+            {/* Vivid Neon Base Character or Custom Uploaded Avatar */}
             <img
-              src="/amogus-shh.svg"
-              alt="Impostor Shhhhh"
-              className="absolute inset-0 w-full h-full p-3 sm:p-3.5 object-contain pointer-events-none drop-shadow-[0_0_16px_rgba(var(--color-accent-impostor),0.45)] z-0"
+              src={preferences.customHeroImage || '/amogus-shh.svg'}
+              alt="Ícono del Menú"
+              className={`absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_16px_rgba(var(--color-accent-impostor),0.45)] z-0 ${
+                preferences.customHeroImage ? 'object-cover p-0' : 'p-3 sm:p-3.5 object-contain'
+              }`}
             />
 
-            {/* React Bits MetallicPaint Liquid Metal Shader Layer */}
-            <div className="absolute inset-0 w-full h-full z-10 opacity-75 mix-blend-screen pointer-events-auto">
-              <MetallicPaint
-                imageSrc="/amogus-shh.svg"
-                color={currentTheme.secondary}
-                edgeBend={0.88}
-                distortion={0.07}
-                dispersion={0.4}
-                density={2.4}
-                softness={0.1}
-                scale={0.78}
-                mouseTilt={0.8}
-                speed={0.75}
-              />
-            </div>
+            {/* React Bits MetallicPaint Liquid Metal Shader Layer (active on default Amogus) */}
+            {!preferences.customHeroImage && (
+              <div className="absolute inset-0 w-full h-full z-10 opacity-75 mix-blend-screen pointer-events-auto">
+                <MetallicPaint
+                  imageSrc="/amogus-shh.svg"
+                  color={currentTheme.secondary}
+                  edgeBend={0.88}
+                  distortion={0.07}
+                  dispersion={0.4}
+                  density={2.4}
+                  softness={0.1}
+                  scale={0.78}
+                  mouseTilt={0.8}
+                  speed={0.75}
+                />
+              </div>
+            )}
           </div>
 
           {/* Glowing Status Badge */}
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-elevated/95 backdrop-blur-sm border border-accent-impostor/40 px-3 py-0.5 rounded-full shadow-lg flex items-center gap-1.5 z-20">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-impostor animate-ping" />
             <span className="font-code text-[10px] sm:text-[11px] text-accent-impostor tracking-widest font-bold uppercase whitespace-nowrap">
-              SHHH... ACTIVE
+              {preferences.customHeroImage ? 'CUSTOM AVATAR' : 'SHHH... ACTIVE'}
             </span>
           </div>
         </div>

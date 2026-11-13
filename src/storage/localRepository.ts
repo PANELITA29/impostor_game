@@ -12,6 +12,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   haptics: true,
   wakeLockEnabled: true,
   debateMusicTrack: 'among-us-drip',
+  customHeroImage: null,
 };
 
 export interface PersistedStorageSchema {
@@ -242,6 +243,9 @@ export function loadPersistedData(): PersistedStorageSchema {
       debateMusicTrack: typeof rawPrefs.debateMusicTrack === 'string' && validTrackIds.includes(rawPrefs.debateMusicTrack)
         ? rawPrefs.debateMusicTrack
         : DEFAULT_PREFERENCES.debateMusicTrack,
+      customHeroImage: typeof rawPrefs.customHeroImage === 'string' && rawPrefs.customHeroImage.length > 0
+        ? rawPrefs.customHeroImage
+        : null,
     };
 
     const sanitizedData: PersistedStorageSchema = {
