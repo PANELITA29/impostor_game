@@ -124,7 +124,7 @@ export const VotingScreen: React.FC = () => {
   const eliminatedSuspects = roundState.assignments.filter((a) => eliminatedIds.includes(a.playerId));
 
   const handleSelectSuspect = (candidate: PlayerAssignment) => {
-    audioManager.playSfx('tap');
+    audioManager.playSfx('bonk');
     setSelectedCandidate(candidate);
     setIsConfirmModalOpen(true);
   };
