@@ -12,6 +12,7 @@ describe('gameEngine & Game Modes', () => {
     ],
     impostorCount: 1,
     chaosMode: false,
+    finalJudgmentMode: true,
     roundDuration: 180,
     selectedCategoryIds: ['cat-movies-series'],
   };

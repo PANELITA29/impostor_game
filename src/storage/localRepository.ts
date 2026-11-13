@@ -1,4 +1,5 @@
 import type { Player, Category, RoundDuration, GameSettings, UserPreferences, GameTheme, GameLanguage } from '../types/game';
+import { DEBATE_MUSIC_TRACKS } from '../audio/musicTracks';
 
 export const STORAGE_KEY_V1 = 'impostor_party_state_v1';
 const MAX_HISTORY_ITEMS = 500;
@@ -10,6 +11,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   musicVolume: 0.5,
   haptics: true,
   wakeLockEnabled: true,
+  debateMusicTrack: 'among-us-drip',
 };
 
 export interface PersistedStorageSchema {
@@ -19,6 +21,7 @@ export interface PersistedStorageSchema {
   settings: {
     impostorCount: number;
     chaosMode: boolean;
+    finalJudgmentMode: boolean;
     roundDuration: RoundDuration;
     selectedCategoryIds: string[];
   };
@@ -40,6 +43,7 @@ const DEFAULT_PERSISTED_STATE: PersistedStorageSchema = {
   settings: {
     impostorCount: 1,
     chaosMode: false,
+    finalJudgmentMode: true,
     roundDuration: 180,
     selectedCategoryIds: ['cat-movies-series', 'cat-video-games', 'cat-food-drinks'],
   },
@@ -144,11 +148,13 @@ function sanitizeCustomCategories(rawCategories: unknown): Category[] {
 
       // Minimum 3 words required
       if (cleanWords.length >= 3) {
+        const icon = typeof (item as any).icon === 'string' ? (item as any).icon.trim().slice(0, 10) : undefined;
         validCategories.push({
           id,
           name,
           words: cleanWords,
           isCustom: true,
+          ...(icon ? { icon } : {}),
         });
       }
     }
@@ -195,6 +201,7 @@ export function loadPersistedData(): PersistedStorageSchema {
       : 1;
 
     const chaosMode = Boolean(parsed.settings?.chaosMode);
+    const finalJudgmentMode = parsed.settings?.finalJudgmentMode !== false;
     const roundDuration = sanitizeDuration(parsed.settings?.roundDuration);
 
     const selectedCategoryIds = Array.isArray(parsed.settings?.selectedCategoryIds)
@@ -210,8 +217,19 @@ export function loadPersistedData(): PersistedStorageSchema {
       : [];
 
     // Sanitize user preferences
-    const validThemes: GameTheme[] = ['midnight', 'cyberpunk', 'crimson', 'amethyst'];
+    const validThemes: GameTheme[] = [
+      'midnight',
+      'cyberpunk',
+      'crimson',
+      'amethyst',
+      'matrix',
+      'solar',
+      'arctic',
+      'synthwave',
+    ];
     const validLanguages: GameLanguage[] = ['es', 'en'];
+
+    const validTrackIds = DEBATE_MUSIC_TRACKS.map((t) => t.id);
 
     const rawPrefs = parsed.preferences || {};
     const preferences: UserPreferences = {
@@ -221,6 +239,9 @@ export function loadPersistedData(): PersistedStorageSchema {
       musicVolume: typeof rawPrefs.musicVolume === 'number' ? Math.max(0, Math.min(1, rawPrefs.musicVolume)) : DEFAULT_PREFERENCES.musicVolume,
       haptics: typeof rawPrefs.haptics === 'boolean' ? rawPrefs.haptics : DEFAULT_PREFERENCES.haptics,
       wakeLockEnabled: typeof rawPrefs.wakeLockEnabled === 'boolean' ? rawPrefs.wakeLockEnabled : DEFAULT_PREFERENCES.wakeLockEnabled,
+      debateMusicTrack: typeof rawPrefs.debateMusicTrack === 'string' && validTrackIds.includes(rawPrefs.debateMusicTrack)
+        ? rawPrefs.debateMusicTrack
+        : DEFAULT_PREFERENCES.debateMusicTrack,
     };
 
     const sanitizedData: PersistedStorageSchema = {
@@ -230,6 +251,7 @@ export function loadPersistedData(): PersistedStorageSchema {
       settings: {
         impostorCount,
         chaosMode,
+        finalJudgmentMode,
         roundDuration,
         selectedCategoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : ['cat-movies-series'],
       },
@@ -291,6 +313,7 @@ export function saveGameSettings(settings: GameSettings): void {
     settings: {
       impostorCount: safeImpostorCount,
       chaosMode: Boolean(settings.chaosMode),
+      finalJudgmentMode: settings.finalJudgmentMode !== false,
       roundDuration: sanitizeDuration(settings.roundDuration),
       selectedCategoryIds: settings.selectedCategoryIds.filter((id) => typeof id === 'string'),
     },

@@ -18,12 +18,12 @@ export interface DockProps {
   className?: string;
 }
 
-const BASE_ITEM_SIZE = 38; // Base width & height in pixels
+const DEFAULT_BASE_ITEM_SIZE = 36;
 
 export const Dock: React.FC<DockProps> = ({
   items,
-  magnification = 1.25,
-  distance = 75,
+  magnification = 1.2,
+  distance = 70,
   className = '',
 }) => {
   const dockRef = useRef<HTMLDivElement>(null);
@@ -79,12 +79,12 @@ export const Dock: React.FC<DockProps> = ({
       onMouseLeave={handleMouseLeave}
       role="toolbar"
       aria-label="Barra de Navegación Rápida"
-      className={`relative inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 rounded-2xl bg-surface/90 backdrop-blur-xl border border-elevated shadow-lg select-none transition-all duration-200 ${className}`}
+      className={`relative inline-flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl bg-surface/90 backdrop-blur-xl border border-elevated shadow-lg select-none transition-all duration-200 ${className}`}
     >
       {items.map((item) => {
         const scale = scales[item.id] ?? 1;
         const isHovered = hoveredId === item.id;
-        const currentSize = Math.round(BASE_ITEM_SIZE * scale);
+        const currentSize = Math.round(DEFAULT_BASE_ITEM_SIZE * scale);
 
         return (
           <div

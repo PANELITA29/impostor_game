@@ -5,11 +5,21 @@ export type ScreenId =
   | 'SETTINGS'
   | 'PASS_AND_PLAY'
   | 'ACTIVE_ROUND'
+  | 'VOTING'
+  | 'JUDGMENT'
   | 'RESOLUTION';
 
 export type RoundDuration = 60 | 120 | 180 | 300 | null;
 
-export type GameTheme = 'midnight' | 'cyberpunk' | 'crimson' | 'amethyst';
+export type GameTheme =
+  | 'midnight'
+  | 'cyberpunk'
+  | 'crimson'
+  | 'amethyst'
+  | 'matrix'
+  | 'solar'
+  | 'arctic'
+  | 'synthwave';
 export type GameLanguage = 'es' | 'en';
 
 export interface UserPreferences {
@@ -19,6 +29,7 @@ export interface UserPreferences {
   musicVolume: number;
   haptics: boolean;
   wakeLockEnabled: boolean;
+  debateMusicTrack: string;
 }
 
 export interface Player {
@@ -31,12 +42,14 @@ export interface Category {
   name: string;
   words: string[];
   isCustom: boolean;
+  icon?: string;
 }
 
 export interface GameSettings {
   players: Player[];
   impostorCount: number;
   chaosMode: boolean;
+  finalJudgmentMode: boolean;
   roundDuration: RoundDuration;
   selectedCategoryIds: string[];
 }
@@ -47,6 +60,23 @@ export interface PlayerAssignment {
   isImpostor: boolean;
 }
 
+export interface VoteResult {
+  votedPlayerId: string;
+  votedPlayerName: string;
+  wasImpostor: boolean;
+  innocentsWon: boolean;
+  impostorStoleVictory?: boolean;
+  impostorGuess?: string;
+}
+
+export interface InterimElimination {
+  votedPlayerId: string;
+  votedPlayerName: string;
+  wasImpostor: boolean;
+  remainingImpostorCount: number;
+  remainingInnocentCount: number;
+}
+
 export interface RoundState {
   categoryName: string;
   secretWord: string;
@@ -54,5 +84,9 @@ export interface RoundState {
   starterPlayerName: string;
   rotationDirection: 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
   chaosEventTriggered: string | null;
+  voteResult?: VoteResult | null;
+  eliminatedPlayerIds: string[];
+  interimElimination?: InterimElimination | null;
+  debateRemainingSeconds?: number | null;
 }
 

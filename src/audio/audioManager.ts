@@ -1,14 +1,17 @@
 /**
- * Lightweight procedural Web Audio API sound manager for IMPOSTOR.
- * 100% offline, zero-asset synthesis, zero latency, and safe on mobile (iOS/Android).
+ * Lightweight procedural Web Audio API & Media sound manager for IMPOSTOR.
+ * 100% offline, zero-latency SFX, dynamic debate music playback and previewing.
  */
+
+import { DEBATE_MUSIC_TRACKS } from './musicTracks';
 
 export type SfxType =
   | 'tap'
   | 'reveal'
   | 'tick_warning'
   | 'time_up'
-  | 'impostor_reveal';
+  | 'impostor_reveal'
+  | 'fart';
 
 class AudioManager {
   private ctx: AudioContext | null = null;
@@ -16,14 +19,50 @@ class AudioManager {
   private sfxVolume: number = 0.8;
   private musicVolume: number = 0.5;
 
-  // Ambient pad oscillator nodes
+  // Sound effects preloaded pools
+  private buttonAudioPool: HTMLAudioElement[] = [];
+  private buttonPoolIdx: number = 0;
+  private lastTapTimestamp: number = 0;
+  private fartAudio: HTMLAudioElement | null = null;
+  private lastFartTimestamp: number = 0;
+
+  // Web Audio pre-decoded audio buffers (0ms instantaneous latency)
+  private buttonBuffer: AudioBuffer | null = null;
+  private fartBuffer: AudioBuffer | null = null;
+  private isBuffersLoading: boolean = false;
+
+  // Ambient pad oscillator nodes (for procedural synthesis mode)
   private ambientGain: GainNode | null = null;
   private ambientOscillators: OscillatorNode[] = [];
   private isAmbientPlaying: boolean = false;
 
+  // File-based debate music playback
+  private audioElement: HTMLAudioElement | null = null;
+  private currentTrackId: string | null = null;
+
+  // Track preview playback in settings
+  private previewAudio: HTMLAudioElement | null = null;
+  private previewTrackId: string | null = null;
+  private previewListeners: Set<(trackId: string | null) => void> = new Set();
+
   constructor() {
-    // Autocall unlock listener on first user gesture
     if (typeof window !== 'undefined') {
+      // Preload sound effect pools
+      try {
+        if (typeof Audio !== 'undefined') {
+          for (let i = 0; i < 4; i++) {
+            const btn = new Audio('/sounds/button.mp3');
+            btn.preload = 'auto';
+            this.buttonAudioPool.push(btn);
+          }
+          this.fartAudio = new Audio('/sounds/fart.mp3');
+          this.fartAudio.preload = 'auto';
+        }
+      } catch {
+        // Fallback for non-browser/test runtimes
+      }
+
+      // Autocall unlock listener on first user gesture
       const handleFirstInteraction = () => {
         this.unlockAudio();
         window.removeEventListener('pointerdown', handleFirstInteraction);
@@ -64,9 +103,39 @@ class AudioManager {
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
-    } catch (err) {
+      this.preloadAudioBuffers();
+    } catch {
       // Gracefully ignore audio subsystem failures
     }
+  }
+
+  /**
+   * Pre-decodes sound effect MP3s into uncompressed Float32 PCM RAM buffers.
+   * This gives 0.0ms instantaneous audio playback without HTML5 decoder lag.
+   */
+  public preloadAudioBuffers(): void {
+    if (this.isBuffersLoading || typeof window === 'undefined') return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    this.isBuffersLoading = true;
+
+    const loadBuffer = async (url: string) => {
+      try {
+        const res = await fetch(url);
+        const arrayBuf = await res.arrayBuffer();
+        return await ctx.decodeAudioData(arrayBuf);
+      } catch {
+        return null;
+      }
+    };
+
+    loadBuffer('/sounds/button.mp3').then((buf) => {
+      if (buf) this.buttonBuffer = buf;
+    });
+
+    loadBuffer('/sounds/fart.mp3').then((buf) => {
+      if (buf) this.fartBuffer = buf;
+    });
   }
 
   /**
@@ -75,14 +144,31 @@ class AudioManager {
   public setMuted(muted: boolean): void {
     this.isMuted = muted;
 
+    // Update SFX audio volumes
+    this.buttonAudioPool.forEach((btn) => {
+      btn.volume = muted ? 0 : this.sfxVolume;
+    });
+    if (this.fartAudio) {
+      this.fartAudio.volume = muted ? 0 : this.sfxVolume;
+    }
+
+    // Update active debate file music
+    if (this.audioElement) {
+      this.audioElement.volume = this.isMuted ? 0 : this.musicVolume;
+    }
+
+    // Update preview audio
+    if (this.previewAudio) {
+      this.previewAudio.volume = this.isMuted ? 0 : this.musicVolume;
+    }
+
+    // Update procedural synthesis
     if (this.isMuted) {
       if (this.ambientGain && this.ctx) {
-        // Quick ramp to zero
         this.ambientGain.gain.setValueAtTime(0, this.ctx.currentTime);
       }
     } else {
       if (this.ambientGain && this.ctx && this.isAmbientPlaying) {
-        // Ramp back to ambient subtle volume based on musicVolume
         this.ambientGain.gain.setTargetAtTime(0.14 * this.musicVolume, this.ctx.currentTime, 0.5);
       }
     }
@@ -90,6 +176,15 @@ class AudioManager {
 
   public setSfxVolume(volume: number): void {
     this.sfxVolume = Math.max(0, Math.min(1, volume));
+
+    if (!this.isMuted) {
+      this.buttonAudioPool.forEach((btn) => {
+        btn.volume = this.sfxVolume;
+      });
+      if (this.fartAudio) {
+        this.fartAudio.volume = this.sfxVolume;
+      }
+    }
   }
 
   public getSfxVolume(): number {
@@ -98,6 +193,15 @@ class AudioManager {
 
   public setMusicVolume(volume: number): void {
     this.musicVolume = Math.max(0, Math.min(1, volume));
+
+    if (this.audioElement && !this.isMuted) {
+      this.audioElement.volume = this.musicVolume;
+    }
+
+    if (this.previewAudio && !this.isMuted) {
+      this.previewAudio.volume = this.musicVolume;
+    }
+
     if (this.ambientGain && this.ctx && this.isAmbientPlaying && !this.isMuted) {
       const targetGain = 0.14 * this.musicVolume;
       this.ambientGain.gain.setTargetAtTime(Math.max(0.0001, targetGain), this.ctx.currentTime, 0.1);
@@ -109,11 +213,90 @@ class AudioManager {
   }
 
   /**
-   * Plays procedural synthesized sound effects with zero latency.
+   * Plays sound effects (file-based or procedural synthesis fallback).
    */
   public playSfx(type: SfxType): void {
     if (this.isMuted) return;
+
     const ctx = this.getContext();
+
+    // 1. Button click sound (Minecraft Button / Pressure Plate)
+    if (type === 'tap') {
+      const nowMs = Date.now();
+      if (nowMs - this.lastTapTimestamp < 20) {
+        return; // Debounce rapid simultaneous calls
+      }
+      this.lastTapTimestamp = nowMs;
+
+      // Primary zero-latency path: Web Audio API AudioBufferSourceNode
+      if (this.buttonBuffer && ctx) {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          const source = ctx.createBufferSource();
+          source.buffer = this.buttonBuffer;
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(this.sfxVolume, ctx.currentTime);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+          return;
+        } catch {}
+      }
+
+      // Secondary fallback: preloaded HTML5 Audio element pool
+      if (this.buttonAudioPool.length > 0) {
+        try {
+          const audio = this.buttonAudioPool[this.buttonPoolIdx % this.buttonAudioPool.length];
+          this.buttonPoolIdx++;
+          audio.volume = this.isMuted ? 0 : this.sfxVolume;
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+          return;
+        } catch {
+          // Fall through to procedural fallback
+        }
+      }
+    }
+
+    // 2. Fart with reverb sound (for dramatic reveal)
+    if (type === 'fart') {
+      const nowMs = Date.now();
+      if (nowMs - this.lastFartTimestamp < 600) {
+        return;
+      }
+      this.lastFartTimestamp = nowMs;
+
+      // Primary zero-latency path: Web Audio API AudioBufferSourceNode
+      if (this.fartBuffer && ctx) {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          const source = ctx.createBufferSource();
+          source.buffer = this.fartBuffer;
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(Math.min(1, this.sfxVolume * 1.15), ctx.currentTime);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+          return;
+        } catch {}
+      }
+
+      try {
+        if (!this.fartAudio && typeof Audio !== 'undefined') {
+          this.fartAudio = new Audio('/sounds/fart.mp3');
+        }
+        if (this.fartAudio) {
+          this.fartAudio.volume = this.isMuted ? 0 : Math.min(1, this.sfxVolume * 1.15);
+          this.fartAudio.currentTime = 0;
+          this.fartAudio.play().catch(() => {});
+          return;
+        }
+      } catch {
+        // Fall through to procedural fallback
+      }
+    }
+
+    // Procedural sound synthesis via Web Audio API fallback
     if (!ctx) return;
 
     if (ctx.state === 'suspended') {
@@ -128,7 +311,6 @@ class AudioManager {
 
       switch (type) {
         case 'tap': {
-          // Soft tactile confirmation click (triangle wave, ~40ms)
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
 
@@ -148,7 +330,6 @@ class AudioManager {
         }
 
         case 'reveal': {
-          // Ascending mysterious chime (~250ms)
           const osc1 = ctx.createOscillator();
           const osc2 = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -177,12 +358,11 @@ class AudioManager {
         }
 
         case 'tick_warning': {
-          // Subtle tension pulse during the last 15 seconds
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
 
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, now); // High pitch A5
+          osc.frequency.setValueAtTime(880, now);
           osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
 
           gain.gain.setValueAtTime(0.09, now);
@@ -197,13 +377,12 @@ class AudioManager {
         }
 
         case 'time_up': {
-          // Double pleasant alarm chime when timer hits 00:00
           [0, 0.12].forEach((offset, idx) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
             osc.type = 'sine';
-            const freq = idx === 0 ? 587.33 : 880; // D5 then A5
+            const freq = idx === 0 ? 587.33 : 880;
             osc.frequency.setValueAtTime(freq, now + offset);
 
             gain.gain.setValueAtTime(0.18, now + offset);
@@ -218,9 +397,9 @@ class AudioManager {
           break;
         }
 
+        case 'fart':
         case 'impostor_reveal': {
-          // Dramatic low-frequency chord for the final reveal
-          const frequencies = [65.41, 98.0, 130.81]; // C2, G2, C3
+          const frequencies = [65.41, 98.0, 130.81];
           const gain = ctx.createGain();
           const filter = ctx.createBiquadFilter();
 
@@ -246,27 +425,99 @@ class AudioManager {
         }
       }
     } catch {
-      // Graceful fallback without crashing
+      // Graceful fallback
     }
   }
 
   /**
-   * Starts a subtle procedural ambient drone / pad (minor chord with lowpass filter).
-   * Volume is intentionally kept low (~0.08) so in-person players can talk without shouting.
+   * Starts debate music based on selected track ID.
    */
-  public startAmbientMusic(): void {
+  public playDebateMusic(trackId?: string): void {
+    this.stopPreview();
+
+    const selectedTrack =
+      DEBATE_MUSIC_TRACKS.find((t) => t.id === trackId) ||
+      DEBATE_MUSIC_TRACKS[0];
+
+    // Silence mode
+    if (selectedTrack.type === 'none') {
+      this.stopDebateMusic();
+      this.currentTrackId = 'none';
+      return;
+    }
+
+    // Procedural synthesizer mode
+    if (selectedTrack.type === 'procedural') {
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      }
+      this.currentTrackId = 'ambient';
+      this.startAmbientProcedural();
+      return;
+    }
+
+    // File-based MP3 mode
+    if (selectedTrack.src) {
+      this.stopAmbientProcedural();
+
+      if (this.audioElement && this.currentTrackId === selectedTrack.id) {
+        this.audioElement.volume = this.isMuted ? 0 : this.musicVolume;
+        if (this.audioElement.paused) {
+          this.audioElement.play().catch(() => {});
+        }
+        return;
+      }
+
+      if (this.audioElement) {
+        this.audioElement.pause();
+      }
+
+      const audio = new Audio(selectedTrack.src);
+      audio.loop = true;
+      audio.volume = this.isMuted ? 0 : this.musicVolume;
+      this.audioElement = audio;
+      this.currentTrackId = selectedTrack.id;
+
+      audio.play().catch(() => {});
+    }
+  }
+
+  /**
+   * Stops active debate music smoothly.
+   */
+  public stopDebateMusic(): void {
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      } catch {}
+      this.audioElement = null;
+    }
+    this.stopAmbientProcedural();
+    this.currentTrackId = null;
+  }
+
+  public startAmbientMusic(trackId?: string): void {
+    this.playDebateMusic(trackId);
+  }
+
+  public stopAmbientMusic(): void {
+    this.stopDebateMusic();
+  }
+
+  private startAmbientProcedural(): void {
     if (this.isAmbientPlaying) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
     try {
-      this.stopAmbientMusic(); // Clean any previous nodes
+      this.stopAmbientProcedural();
 
       const now = ctx.currentTime;
       const gain = ctx.createGain();
       const filter = ctx.createBiquadFilter();
 
-      // Atmospheric dark low-pass filter
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(280, now);
 
@@ -278,7 +529,6 @@ class AudioManager {
       filter.connect(gain);
       gain.connect(ctx.destination);
 
-      // Procedural minor triad: D2 (73.42Hz), A2 (110.0Hz), F3 (174.61Hz)
       const frequencies = [73.42, 110.0, 174.61];
       const oscillators: OscillatorNode[] = [];
 
@@ -294,15 +544,10 @@ class AudioManager {
       this.ambientGain = gain;
       this.ambientOscillators = oscillators;
       this.isAmbientPlaying = true;
-    } catch {
-      // Graceful degradation
-    }
+    } catch {}
   }
 
-  /**
-   * Stops the ambient music smoothly.
-   */
-  public stopAmbientMusic(): void {
+  private stopAmbientProcedural(): void {
     if (!this.isAmbientPlaying && this.ambientOscillators.length === 0) return;
 
     try {
@@ -329,6 +574,77 @@ class AudioManager {
       this.ambientGain = null;
       this.isAmbientPlaying = false;
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // PREVIEW SYSTEM (for Settings screen)
+  // --------------------------------------------------------------------------
+
+  public togglePreviewTrack(trackId: string): boolean {
+    if (this.previewTrackId === trackId) {
+      this.stopPreview();
+      return false;
+    }
+
+    this.stopPreview();
+
+    const track = DEBATE_MUSIC_TRACKS.find((t) => t.id === trackId);
+    if (!track || track.type === 'none') {
+      return false;
+    }
+
+    if (track.type === 'procedural') {
+      this.startAmbientProcedural();
+      this.previewTrackId = trackId;
+      this.notifyPreviewListeners();
+      return true;
+    }
+
+    if (track.src) {
+      const audio = new Audio(track.src);
+      audio.loop = true;
+      audio.volume = this.isMuted ? 0 : this.musicVolume;
+      audio.play().catch(() => {});
+      this.previewAudio = audio;
+      this.previewTrackId = trackId;
+      this.notifyPreviewListeners();
+      return true;
+    }
+
+    return false;
+  }
+
+  public stopPreview(): void {
+    if (this.previewAudio) {
+      try {
+        this.previewAudio.pause();
+        this.previewAudio.currentTime = 0;
+      } catch {}
+      this.previewAudio = null;
+    }
+
+    if (this.previewTrackId === 'ambient') {
+      this.stopAmbientProcedural();
+    }
+
+    this.previewTrackId = null;
+    this.notifyPreviewListeners();
+  }
+
+  public getPreviewTrackId(): string | null {
+    return this.previewTrackId;
+  }
+
+  public subscribePreview(listener: (trackId: string | null) => void): () => void {
+    this.previewListeners.add(listener);
+    listener(this.previewTrackId);
+    return () => {
+      this.previewListeners.delete(listener);
+    };
+  }
+
+  private notifyPreviewListeners(): void {
+    this.previewListeners.forEach((fn) => fn(this.previewTrackId));
   }
 }
 

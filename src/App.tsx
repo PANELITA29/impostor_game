@@ -7,6 +7,8 @@ import { CategoriesScreen } from './screens/CategoriesScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { PassAndPlayScreen } from './screens/PassAndPlayScreen';
 import { ActiveRoundScreen } from './screens/ActiveRoundScreen';
+import { VotingScreen } from './screens/VotingScreen';
+import { JudgmentScreen } from './screens/JudgmentScreen';
 import { ResolutionScreen } from './screens/ResolutionScreen';
 import { audioManager } from './audio/audioManager';
 import { useWakeLock } from './hooks/useWakeLock';
@@ -15,8 +17,13 @@ export function App() {
   const currentScreen = useGameStore((state) => state.currentScreen);
   const wakeLockEnabled = useGameStore((state) => state.preferences.wakeLockEnabled);
 
-  // Keep screen awake during critical Pass & Play and Active Round gameplay if enabled
-  const isGameActive = (currentScreen === 'PASS_AND_PLAY' || currentScreen === 'ACTIVE_ROUND') && wakeLockEnabled;
+  // Keep screen awake during critical Pass & Play, Active Round, Voting and Judgment gameplay if enabled
+  const isGameActive =
+    (currentScreen === 'PASS_AND_PLAY' ||
+      currentScreen === 'ACTIVE_ROUND' ||
+      currentScreen === 'VOTING' ||
+      currentScreen === 'JUDGMENT') &&
+    wakeLockEnabled;
   useWakeLock(isGameActive);
 
   // Prevent accidental tab closure or navigation during active gameplay
@@ -64,6 +71,10 @@ export function App() {
         return <PassAndPlayScreen />;
       case 'ACTIVE_ROUND':
         return <ActiveRoundScreen />;
+      case 'VOTING':
+        return <VotingScreen />;
+      case 'JUDGMENT':
+        return <JudgmentScreen />;
       case 'RESOLUTION':
         return <ResolutionScreen />;
       default:

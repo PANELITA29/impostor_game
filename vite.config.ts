@@ -73,6 +73,21 @@ export default defineConfig({
               },
             },
           },
+          {
+            // Offline audio tracks for debate music & sound effects
+            urlPattern: /\/(music|sounds)\/.*\.mp3$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'game-audio-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
     }),

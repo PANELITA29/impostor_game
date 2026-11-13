@@ -4,6 +4,7 @@ import { audioManager } from '../audio/audioManager';
 import { Button, Badge } from '../components/ui';
 import { ReflectiveCard } from '../components/ui/ReflectiveCard';
 import { HoldToRevealButton } from '../components/gameplay/HoldToRevealButton';
+import { CategoryIconBadge } from '../components/gameplay/CategoryVisual';
 import {
   Smartphone,
   ShieldAlert,
@@ -138,7 +139,7 @@ export const PassAndPlayScreen: React.FC = () => {
                 shine={1.5}
                 enableTilt={true}
                 tiltStrength={14}
-                className="max-w-[340px] mx-auto rounded-3xl shadow-[0_0_40px_rgba(255,59,92,0.35)]"
+                className="max-w-[340px] mx-auto rounded-3xl shadow-[0_0_40px_rgba(var(--color-accent-impostor),0.35)]"
               >
                 <div className="flex flex-col items-center justify-between text-center h-full p-4 space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-canvas/80 border border-accent-impostor/50 flex items-center justify-center text-accent-impostor shadow-lg">
@@ -149,12 +150,13 @@ export const PassAndPlayScreen: React.FC = () => {
                     <Badge variant="impostor" size="md">
                       Rol Asignado
                     </Badge>
-                    <h3 className="text-2xl sm:text-3xl font-headline font-bold text-accent-impostor tracking-wider pt-1 drop-shadow-[0_0_12px_rgba(255,59,92,0.5)]">
+                    <h3 className="text-2xl sm:text-3xl font-headline font-bold text-accent-impostor tracking-wider pt-1 drop-shadow-[0_0_12px_rgba(var(--color-accent-impostor),0.5)]">
                       ERES EL IMPOSTOR
                     </h3>
-                    <div className="text-xs font-code text-text-secondary pt-1">
-                      CATEGORÍA:{' '}
-                      <span className="text-text-primary font-bold">
+                    <div className="text-xs font-code text-text-secondary pt-1 flex items-center justify-center gap-1.5">
+                      <span>CATEGORÍA:</span>
+                      <span className="text-text-primary font-bold inline-flex items-center gap-1">
+                        <CategoryIconBadge category={roundState.categoryName} size="sm" />
                         {roundState.categoryName}
                       </span>
                     </div>
@@ -189,9 +191,10 @@ export const PassAndPlayScreen: React.FC = () => {
                     <Badge variant="primary" size="md">
                       INOCENTE
                     </Badge>
-                    <div className="text-xs font-code text-text-secondary pt-1">
-                      CATEGORÍA:{' '}
-                      <span className="text-text-primary font-bold">
+                    <div className="text-xs font-code text-text-secondary pt-1 flex items-center justify-center gap-1.5">
+                      <span>CATEGORÍA:</span>
+                      <span className="text-text-primary font-bold inline-flex items-center gap-1">
+                        <CategoryIconBadge category={roundState.categoryName} size="sm" />
                         {roundState.categoryName}
                       </span>
                     </div>

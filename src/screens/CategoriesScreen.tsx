@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { Button, Card, Badge, Modal } from '../components/ui';
+import { CategoryIconBadge } from '../components/gameplay/CategoryVisual';
 import type { Category } from '../types/game';
 import {
   ArrowLeft,
@@ -27,6 +28,7 @@ export const CategoriesScreen: React.FC = () => {
 
   // Form states
   const [formName, setFormName] = useState('');
+  const [formIcon, setFormIcon] = useState('🏷️');
   const [formWords, setFormWords] = useState<string[]>([]);
   const [wordInput, setWordInput] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export const CategoriesScreen: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingCategory(null);
     setFormName('');
+    setFormIcon('🏷️');
     setFormWords([]);
     setWordInput('');
     setFormError(null);
@@ -46,6 +49,7 @@ export const CategoriesScreen: React.FC = () => {
   const handleOpenEdit = (category: Category) => {
     setEditingCategory(category);
     setFormName(category.name);
+    setFormIcon(category.icon || '🏷️');
     setFormWords([...category.words]);
     setWordInput('');
     setFormError(null);
@@ -98,12 +102,14 @@ export const CategoriesScreen: React.FC = () => {
       updateCategory(editingCategory.id, {
         name: sanitizedName,
         words: formWords,
+        icon: formIcon,
       });
     } else {
       addCategory({
         name: sanitizedName,
         words: formWords,
         isCustom: true,
+        icon: formIcon,
       });
     }
 
@@ -180,21 +186,24 @@ export const CategoriesScreen: React.FC = () => {
                   className="flex flex-col justify-between p-4 space-y-3 border-elevated/80 hover:border-accent-chaos/40 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-headline font-bold text-base text-text-primary">
-                          {cat.name}
-                        </h3>
-                        <Badge variant="chaos" size="sm">
-                          Propia
-                        </Badge>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <CategoryIconBadge category={cat} size="md" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-headline font-bold text-base text-text-primary truncate">
+                            {cat.name}
+                          </h3>
+                          <Badge variant="chaos" size="sm">
+                            Propia
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-text-secondary block">
+                          {cat.words.length} palabras registradas
+                        </span>
                       </div>
-                      <span className="text-xs text-text-secondary">
-                        {cat.words.length} palabras registradas
-                      </span>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(cat)}
@@ -242,15 +251,18 @@ export const CategoriesScreen: React.FC = () => {
             <span>Categorías Base del Juego ({defaultCategories.length})</span>
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {defaultCategories.map((cat) => (
-              <Card key={cat.id} variant="default" className="p-3.5 space-y-1.5 opacity-80">
-                <span className="font-headline font-bold text-sm text-text-primary block truncate">
-                  {cat.name}
-                </span>
-                <span className="text-xs text-text-secondary block">
-                  {cat.words.length} palabras predefinidas
-                </span>
+              <Card key={cat.id} variant="default" className="p-3.5 flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
+                <CategoryIconBadge category={cat} size="md" />
+                <div className="min-w-0">
+                  <span className="font-headline font-bold text-sm text-text-primary block truncate">
+                    {cat.name}
+                  </span>
+                  <span className="text-xs text-text-secondary block">
+                    {cat.words.length} palabras
+                  </span>
+                </div>
               </Card>
             ))}
           </div>
@@ -319,6 +331,30 @@ export const CategoriesScreen: React.FC = () => {
               maxLength={30}
               className="w-full min-h-[48px] px-3.5 rounded-xl bg-canvas border border-elevated text-text-primary text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-primary"
             />
+          </div>
+
+          {/* Selector de Ícono / Emoji */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-headline font-bold text-text-primary uppercase tracking-wider flex items-center justify-between">
+              <span>Ícono / Emoji</span>
+              <span className="text-base leading-none">{formIcon}</span>
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap p-2 rounded-xl bg-canvas border border-elevated">
+              {['🏷️', '🎭', '🔥', '🚀', '🧠', '🍻', '🍔', '👻', '👾', '🎉', '💡', '👑', '🍿', '🚗', '🎸', '🏖️'].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setFormIcon(emoji)}
+                  className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all ${
+                    formIcon === emoji
+                      ? 'bg-accent-chaos/25 border-2 border-accent-chaos scale-110 shadow-[0_0_12px_rgba(168,85,247,0.35)]'
+                      : 'bg-elevated/40 border border-transparent hover:bg-elevated hover:scale-105'
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Campo de Entrada de Palabras */}

@@ -108,6 +108,10 @@ export function generateRound(
     starterPlayerName,
     rotationDirection,
     chaosEventTriggered: modeResolution.chaosEventTriggered,
+    voteResult: null,
+    eliminatedPlayerIds: [],
+    interimElimination: null,
+    debateRemainingSeconds: null,
   };
 
   return {

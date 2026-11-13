@@ -6,6 +6,8 @@ import type {
   Category,
   GameSettings,
   RoundState,
+  VoteResult,
+  InterimElimination,
   UserPreferences,
 } from '../types/game';
 import { DEFAULT_CATEGORIES } from '../data/defaultCategories';
@@ -20,6 +22,7 @@ import {
   resetAllData,
 } from '../storage/localRepository';
 import { audioManager } from '../audio/audioManager';
+import { isWordMatch } from '../utils/textMatching';
 
 interface GameStoreState {
   currentScreen: ScreenId;
@@ -46,6 +49,7 @@ interface GameStoreState {
   updatePlayerName: (id: string, name: string) => void;
   setImpostorCount: (count: number) => void;
   toggleChaosMode: () => void;
+  toggleFinalJudgmentMode: () => void;
   setRoundDuration: (duration: RoundDuration) => void;
   toggleCategorySelection: (categoryId: string) => void;
 
@@ -59,6 +63,12 @@ interface GameStoreState {
   // Round flow with Game Engine
   startRound: () => boolean;
   endRound: () => void;
+  submitVote: (votedPlayerId: string) => void;
+  submitImpostorGuess: (guess: string) => void;
+  surrenderImpostor: () => void;
+  resumeDebateAfterElimination: () => void;
+  setDebateRemainingSeconds: (seconds: number | null) => void;
+  exitGameToLobby: () => void;
   resetGame: () => void;
 }
 
@@ -91,6 +101,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     players: persisted.players,
     impostorCount: persisted.settings.impostorCount,
     chaosMode: persisted.settings.chaosMode,
+    finalJudgmentMode: persisted.settings.finalJudgmentMode !== false,
     roundDuration: persisted.settings.roundDuration,
     selectedCategoryIds: initialSelectedIds,
   },
@@ -146,6 +157,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         players: fresh.players,
         impostorCount: fresh.settings.impostorCount,
         chaosMode: fresh.settings.chaosMode,
+        finalJudgmentMode: fresh.settings.finalJudgmentMode !== false,
         roundDuration: fresh.settings.roundDuration,
         selectedCategoryIds: fresh.settings.selectedCategoryIds,
       },
@@ -233,6 +245,18 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const updatedSettings = {
         ...state.settings,
         chaosMode: !state.settings.chaosMode,
+      };
+      saveGameSettings(updatedSettings);
+      return { settings: updatedSettings };
+    });
+  },
+
+  toggleFinalJudgmentMode: () => {
+    audioManager.playSfx('tap');
+    set((state) => {
+      const updatedSettings = {
+        ...state.settings,
+        finalJudgmentMode: !state.settings.finalJudgmentMode,
       };
       saveGameSettings(updatedSettings);
       return { settings: updatedSettings };
@@ -372,6 +396,226 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     audioManager.stopAmbientMusic();
     audioManager.playSfx('tap');
     set({ currentScreen: 'RESOLUTION' });
+  },
+
+  setDebateRemainingSeconds: (seconds) => {
+    const { roundState } = get();
+    if (!roundState) return;
+    set({
+      roundState: {
+        ...roundState,
+        debateRemainingSeconds: seconds,
+      },
+    });
+  },
+
+  resumeDebateAfterElimination: () => {
+    const { roundState } = get();
+    if (!roundState) return;
+
+    audioManager.playSfx('tap');
+    set({
+      roundState: {
+        ...roundState,
+        interimElimination: null,
+        debateRemainingSeconds: null, // Reset to fresh full timer
+      },
+      currentScreen: 'ACTIVE_ROUND',
+    });
+  },
+
+  submitVote: (votedPlayerId: string) => {
+    const { roundState, settings } = get();
+    if (!roundState) return;
+
+    audioManager.stopAmbientMusic();
+
+    const votedAssignment = roundState.assignments.find((a) => a.playerId === votedPlayerId);
+    const wasImpostor = !!votedAssignment?.isImpostor;
+
+    const currentEliminated = roundState.eliminatedPlayerIds || [];
+    const nextEliminated = [...currentEliminated, votedPlayerId];
+
+    // Compute remaining active players
+    const activeAssignments = roundState.assignments.filter(
+      (a) => !nextEliminated.includes(a.playerId)
+    );
+    const remainingImpostors = activeAssignments.filter((a) => a.isImpostor);
+    const remainingInnocents = activeAssignments.filter((a) => !a.isImpostor);
+
+    if (wasImpostor) {
+      if (remainingImpostors.length === 0) {
+        // ALL impostors caught!
+        const voteResult: VoteResult = {
+          votedPlayerId,
+          votedPlayerName: votedAssignment?.playerName || 'Jugador',
+          wasImpostor: true,
+          innocentsWon: true,
+        };
+
+        if (settings.finalJudgmentMode !== false) {
+          // Enter the Judgment Phase ("El Juicio Final")
+          set({
+            roundState: {
+              ...roundState,
+              eliminatedPlayerIds: nextEliminated,
+              voteResult,
+              interimElimination: null,
+            },
+            currentScreen: 'JUDGMENT',
+          });
+        } else {
+          // Final Judgment is disabled -> Innocents win directly!
+          audioManager.playSfx('reveal');
+          set({
+            roundState: {
+              ...roundState,
+              eliminatedPlayerIds: nextEliminated,
+              voteResult,
+              interimElimination: null,
+            },
+            currentScreen: 'RESOLUTION',
+          });
+        }
+      } else {
+        // Impostor caught, BUT others remain! The game continues!
+        const interimElimination: InterimElimination = {
+          votedPlayerId,
+          votedPlayerName: votedAssignment?.playerName || 'Jugador',
+          wasImpostor: true,
+          remainingImpostorCount: remainingImpostors.length,
+          remainingInnocentCount: remainingInnocents.length,
+        };
+
+        set({
+          roundState: {
+            ...roundState,
+            eliminatedPlayerIds: nextEliminated,
+            interimElimination,
+            voteResult: null,
+          },
+        });
+      }
+    } else {
+      // An innocent was voted out!
+      // In 1-impostor games or if remaining innocents <= remaining impostors -> Impostors win!
+      if (settings.impostorCount === 1 || remainingInnocents.length <= remainingImpostors.length) {
+        const voteResult: VoteResult = {
+          votedPlayerId,
+          votedPlayerName: votedAssignment?.playerName || 'Jugador',
+          wasImpostor: false,
+          innocentsWon: false,
+        };
+
+        set({
+          roundState: {
+            ...roundState,
+            eliminatedPlayerIds: nextEliminated,
+            voteResult,
+            interimElimination: null,
+          },
+          currentScreen: 'RESOLUTION',
+        });
+      } else {
+        // Innocent eliminated, but innocents still outnumber impostors -> Game continues!
+        const interimElimination: InterimElimination = {
+          votedPlayerId,
+          votedPlayerName: votedAssignment?.playerName || 'Jugador',
+          wasImpostor: false,
+          remainingImpostorCount: remainingImpostors.length,
+          remainingInnocentCount: remainingInnocents.length,
+        };
+
+        set({
+          roundState: {
+            ...roundState,
+            eliminatedPlayerIds: nextEliminated,
+            interimElimination,
+            voteResult: null,
+          },
+        });
+      }
+    }
+  },
+
+  submitImpostorGuess: (guess: string) => {
+    const { roundState } = get();
+    if (!roundState) return;
+
+    audioManager.stopAmbientMusic();
+    const secretWord = roundState.secretWord;
+    const isCorrect = isWordMatch(guess, secretWord);
+
+    if (isCorrect) {
+      // Impostor successfully guessed and stole the victory!
+      audioManager.playSfx('reveal');
+      const voteResult: VoteResult = {
+        votedPlayerId: roundState.voteResult?.votedPlayerId || '',
+        votedPlayerName: roundState.voteResult?.votedPlayerName || 'Impostor',
+        wasImpostor: true,
+        innocentsWon: false,
+        impostorStoleVictory: true,
+        impostorGuess: guess.trim(),
+      };
+
+      set({
+        roundState: {
+          ...roundState,
+          voteResult,
+        },
+        currentScreen: 'RESOLUTION',
+      });
+    } else {
+      // Impostor guessed wrong! Innocents win decisively!
+      const voteResult: VoteResult = {
+        votedPlayerId: roundState.voteResult?.votedPlayerId || '',
+        votedPlayerName: roundState.voteResult?.votedPlayerName || 'Impostor',
+        wasImpostor: true,
+        innocentsWon: true,
+        impostorStoleVictory: false,
+        impostorGuess: guess.trim(),
+      };
+
+      set({
+        roundState: {
+          ...roundState,
+          voteResult,
+        },
+        currentScreen: 'RESOLUTION',
+      });
+    }
+  },
+
+  surrenderImpostor: () => {
+    const { roundState } = get();
+    if (!roundState) return;
+
+    audioManager.playSfx('tap');
+    const voteResult: VoteResult = {
+      votedPlayerId: roundState.voteResult?.votedPlayerId || '',
+      votedPlayerName: roundState.voteResult?.votedPlayerName || 'Impostor',
+      wasImpostor: true,
+      innocentsWon: true,
+      impostorStoleVictory: false,
+    };
+
+    set({
+      roundState: {
+        ...roundState,
+        voteResult,
+      },
+      currentScreen: 'RESOLUTION',
+    });
+  },
+
+  exitGameToLobby: () => {
+    audioManager.stopAmbientMusic();
+    audioManager.playSfx('tap');
+    set({
+      roundState: null,
+      currentScreen: 'LOBBY',
+      errorMessage: null,
+    });
   },
 
   resetGame: () => {

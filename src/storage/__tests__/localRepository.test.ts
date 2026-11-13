@@ -61,6 +61,7 @@ describe('localRepository', () => {
       ],
       impostorCount: 1,
       chaosMode: true,
+      finalJudgmentMode: true,
       roundDuration: 300,
       selectedCategoryIds: ['cat-movies-series', 'cat-video-games'],
     };
@@ -71,6 +72,7 @@ describe('localRepository', () => {
     expect(loaded.players.length).toBe(4);
     expect(loaded.players[0].name).toBe('Batman');
     expect(loaded.settings.chaosMode).toBe(true);
+    expect(loaded.settings.finalJudgmentMode).toBe(true);
     expect(loaded.settings.roundDuration).toBe(300);
     expect(loaded.settings.selectedCategoryIds).toEqual(['cat-movies-series', 'cat-video-games']);
   });
@@ -121,7 +123,7 @@ describe('localRepository', () => {
     expect(loaded.isMuted).toBe(true);
   });
 
-  it('guarda y recupera preferencias de usuario (tema, idioma, volúmenes)', () => {
+  it('guarda y recupera preferencias de usuario (tema, idioma, volúmenes, pista de debate)', () => {
     savePreferences({
       theme: 'cyberpunk',
       language: 'en',
@@ -129,6 +131,7 @@ describe('localRepository', () => {
       musicVolume: 0.3,
       haptics: false,
       wakeLockEnabled: true,
+      debateMusicTrack: 'undertale-shop',
     });
 
     const loaded = loadPersistedData();
@@ -137,6 +140,7 @@ describe('localRepository', () => {
     expect(loaded.preferences.sfxVolume).toBe(0.9);
     expect(loaded.preferences.musicVolume).toBe(0.3);
     expect(loaded.preferences.haptics).toBe(false);
+    expect(loaded.preferences.debateMusicTrack).toBe('undertale-shop');
   });
 });
 

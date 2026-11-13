@@ -4,6 +4,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-movies-series',
     name: 'Películas y Series',
+    icon: '🎬',
     isCustom: false,
     words: [
       'Titanic',
@@ -39,6 +40,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-video-games',
     name: 'Videojuegos',
+    icon: '🎮',
     isCustom: false,
     words: [
       'Minecraft',
@@ -73,6 +75,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-footballers',
     name: 'Futbolistas',
+    icon: '⚽',
     isCustom: false,
     words: [
       'Lionel Messi',
@@ -106,6 +109,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-countries-cities',
     name: 'Países y Ciudades',
+    icon: '🌍',
     isCustom: false,
     words: [
       'París',
@@ -140,6 +144,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-food-drinks',
     name: 'Comida y Bebidas',
+    icon: '🍕',
     isCustom: false,
     words: [
       'Pizza',
@@ -174,6 +179,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-celebrities-internet',
     name: 'Celebridades e Internet',
+    icon: '⭐',
     isCustom: false,
     words: [
       'Shakira',
@@ -207,6 +213,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-animals',
     name: 'Animales',
+    icon: '🐾',
     isCustom: false,
     words: [
       'León',
@@ -241,6 +248,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-daily-objects',
     name: 'Objetos Cotidianos',
+    icon: '📦',
     isCustom: false,
     words: [
       'Teléfono móvil',
@@ -275,6 +283,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-professions',
     name: 'Profesiones y Oficios',
+    icon: '💼',
     isCustom: false,
     words: [
       'Médico',
@@ -308,6 +317,7 @@ export const DEFAULT_CATEGORIES: readonly Category[] = [
   {
     id: 'cat-sports',
     name: 'Deportes',
+    icon: '🏅',
     isCustom: false,
     words: [
       'Fútbol',

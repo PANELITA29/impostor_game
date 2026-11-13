@@ -15,13 +15,13 @@
   }
 
   [data-theme="cyberpunk"] {
-    --color-canvas: 8 7 18;
-    --color-surface: 19 16 38;
-    --color-elevated: 32 26 64;
+    --color-canvas: 8 7 22;
+    --color-surface: 20 16 43;
+    --color-elevated: 34 28 71;
     --color-accent-primary: 0 240 255;
-    --color-accent-impostor: 255 0 127;
-    --color-accent-chaos: 255 230 0;
-    --color-accent-warning: 255 184 0;
+    --color-accent-impostor: 255 230 0;
+    --color-accent-chaos: 189 0 255;
+    --color-accent-warning: 255 153 0;
   }
 
   [data-theme="crimson"] {
@@ -29,19 +29,70 @@
     --color-surface: 28 13 17;
     --color-elevated: 45 22 28;
     --color-accent-primary: 255 51 85;
-    --color-accent-impostor: 255 149 0;
+    --color-accent-impostor: 255 136 0;
     --color-accent-chaos: 185 28 28;
     --color-accent-warning: 245 158 11;
   }
 
   [data-theme="amethyst"] {
     --color-canvas: 11 7 22;
-    --color-surface: 23 15 44;
-    --color-elevated: 38 26 71;
+    --color-surface: 29 18 51;
+    --color-elevated: 46 29 82;
     --color-accent-primary: 179 136 255;
     --color-accent-impostor: 0 229 255;
-    --color-accent-chaos: 255 64 129;
-    --color-accent-warning: 255 215 0;
+    --color-accent-chaos: 139 92 246;
+    --color-accent-warning: 251 191 36;
+  }
+
+  [data-theme="matrix"] {
+    --color-canvas: 4 10 5;
+    --color-surface: 9 27 13;
+    --color-elevated: 17 49 24;
+    --color-accent-primary: 0 255 102;
+    --color-accent-impostor: 56 189 248;
+    --color-accent-chaos: 163 230 53;
+    --color-accent-warning: 250 204 21;
+  }
+
+  [data-theme="solar"] {
+    --color-canvas: 15 12 6;
+    --color-surface: 37 28 15;
+    --color-elevated: 61 46 26;
+    --color-accent-primary: 255 184 0;
+    --color-accent-impostor: 251 146 60;
+    --color-accent-chaos: 234 179 8;
+    --color-accent-warning: 245 158 11;
+  }
+
+  [data-theme="arctic"] {
+    --color-canvas: 6 12 22;
+    --color-surface: 13 28 46;
+    --color-elevated: 22 46 74;
+    --color-accent-primary: 56 189 248;
+    --color-accent-impostor: 45 212 191;
+    --color-accent-chaos: 129 140 248;
+    --color-accent-warning: 252 211 77;
+  }
+
+  [data-theme="synthwave"] {
+    --color-canvas: 13 7 20;
+    --color-surface: 33 16 48;
+    --color-elevated: 53 26 77;
+    --color-accent-primary: 236 72 153;
+    --color-accent-impostor: 6 182 212;
+    --color-accent-chaos: 139 92 246;
+    --color-accent-warning: 245 158 11;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -51,6 +102,21 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 0.3s ease;
+    overflow-x: hidden;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
   }
 
   /* =========================================================================
@@ -92,5 +158,126 @@
 
   ::-webkit-scrollbar-corner {
     background: transparent;
+  }
+}
+
+/* =========================================================================
+   GAME JUICE & MOTION DESIGN SYSTEM (GPU-ACCELERATED, 60/120 FPS)
+   ========================================================================= */
+:root {
+  /* Motion Physics & Timings */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-mount: 450ms;
+  --dur-hover: 180ms;
+  --dur-tap: 60ms;
+}
+
+/* Strictly GPU-accelerated: transform & opacity */
+@keyframes gameButtonMount {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes idleShimmer {
+  0% {
+    transform: translate3d(-150%, 0, 0) rotate(25deg);
+  }
+  20%, 100% {
+    transform: translate3d(250%, 0, 0) rotate(25deg);
+  }
+}
+
+@keyframes idleBreathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.018);
+  }
+}
+
+/* Mount animation utility */
+.btn-game-mount {
+  animation: gameButtonMount var(--dur-mount) var(--ease-spring) both;
+  will-change: transform, opacity;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 80ms; }
+.stagger-2 { animation-delay: 160ms; }
+.stagger-3 { animation-delay: 240ms; }
+.stagger-4 { animation-delay: 320ms; }
+.stagger-5 { animation-delay: 400ms; }
+
+/* Physical tactile button with Game Juice */
+.btn-game-juice {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--dur-hover) var(--ease-spring),
+              filter var(--dur-hover) var(--ease-smooth);
+}
+
+/* Hover exclusively on pointer-fine desktop devices */
+@media (hover: hover) and (pointer: fine) {
+  .btn-game-juice:hover:not(:disabled) {
+    transform: translate3d(0, -3px, 0) scale(1.025);
+    filter: brightness(1.08);
+  }
+}
+
+/* Instant tactile squish on press (tap/click) */
+.btn-game-juice:active:not(:disabled) {
+  transform: translate3d(0, 2px, 0) scale(0.96) !important;
+  transition-duration: var(--dur-tap) !important;
+  filter: brightness(0.95);
+}
+
+/* High-priority CTA idle effect with shimmer & gentle breathing */
+.btn-cta-pulse {
+  animation: idleBreathe 3.5s ease-in-out infinite;
+  overflow: hidden;
+  position: relative;
+}
+
+.btn-cta-pulse::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: idleShimmer 3.5s ease-in-out infinite;
+  z-index: 1;
+}
+
+/* Accessibility: strictly honor prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn-game-mount,
+  .btn-cta-pulse,
+  .btn-cta-pulse::before {
+    animation: none !important;
+  }
+  .btn-game-juice {
+    transition: opacity 150ms ease !important;
+    transform: none !important;
+  }
+  .btn-game-juice:active:not(:disabled) {
+    opacity: 0.75 !important;
+    transform: none !important;
   }
 }

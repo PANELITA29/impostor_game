@@ -1,4 +1,5 @@
 import React from 'react';
+import { audioManager } from '../../audio/audioManager';
 
 export type ButtonVariant = 'primary' | 'danger' | 'chaos' | 'secondary' | 'ghost';
 export type ButtonSize = 'md' | 'lg' | 'sm';
@@ -9,6 +10,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  isCta?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -23,25 +25,27 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className = '',
       disabled,
       type = 'button',
+      isCta = false,
+      onClick,
       ...props
     },
     ref
   ) => {
-    // Base styles: Mandatory minimum touch target of 48px x 48px
+    // Base styles with Game Juice physics and 48px touch target
     const baseStyles =
-      'inline-flex items-center justify-center font-headline font-bold rounded-xl transition-all duration-150 min-h-[48px] min-w-[48px] px-5 py-3 select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100';
+      'btn-game-juice relative inline-flex items-center justify-center font-headline font-bold rounded-xl min-h-[48px] min-w-[48px] px-5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:pointer-events-none';
 
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        'bg-accent-primary text-canvas hover:brightness-110 active:brightness-95 focus-visible:ring-accent-primary shadow-[0_0_20px_rgba(0,229,160,0.25)]',
+        'bg-accent-primary text-canvas focus-visible:ring-accent-primary shadow-[0_0_20px_rgba(0,229,160,0.25)]',
       danger:
-        'bg-accent-impostor text-text-primary hover:brightness-110 active:brightness-95 focus-visible:ring-accent-impostor shadow-[0_0_20px_rgba(255,59,92,0.25)]',
+        'bg-accent-impostor text-text-primary focus-visible:ring-accent-impostor shadow-[0_0_20px_rgba(255,59,92,0.25)]',
       chaos:
-        'bg-accent-chaos text-text-primary hover:brightness-110 active:brightness-95 focus-visible:ring-accent-chaos shadow-[0_0_20px_rgba(168,85,247,0.25)]',
+        'bg-accent-chaos text-text-primary focus-visible:ring-accent-chaos shadow-[0_0_20px_rgba(168,85,247,0.25)]',
       secondary:
-        'bg-elevated text-text-primary border border-surface hover:bg-surface/80 active:bg-elevated focus-visible:ring-text-secondary',
+        'bg-elevated text-text-primary border border-surface focus-visible:ring-text-secondary',
       ghost:
-        'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface/50 active:bg-surface focus-visible:ring-text-secondary',
+        'bg-transparent text-text-secondary focus-visible:ring-text-secondary',
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
@@ -51,18 +55,36 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const widthStyle = fullWidth ? 'w-full' : '';
+    const ctaStyle = isCta ? 'btn-cta-pulse' : '';
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (!disabled && e.button === 0) {
+        audioManager.playSfx('tap');
+      }
+      props.onPointerDown?.(e);
+    };
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      // Handles keyboard activation (Enter / Space) or environments without pointer events
+      if (!disabled) {
+        audioManager.playSfx('tap');
+      }
+      onClick?.(e);
+    };
 
     return (
       <button
         ref={ref}
         type={type}
         disabled={disabled}
-        className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${className}`.trim()}
+        onPointerDown={handlePointerDown}
+        onClick={handleClick}
+        className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${ctaStyle} ${className}`.trim()}
         {...props}
       >
-        {leftIcon && <span className="mr-2.5 inline-flex items-center shrink-0">{leftIcon}</span>}
-        <span>{children}</span>
-        {rightIcon && <span className="ml-2.5 inline-flex items-center shrink-0">{rightIcon}</span>}
+        {leftIcon && <span className="mr-2.5 inline-flex items-center shrink-0 relative z-10">{leftIcon}</span>}
+        <span className="relative z-10">{children}</span>
+        {rightIcon && <span className="ml-2.5 inline-flex items-center shrink-0 relative z-10">{rightIcon}</span>}
       </button>
     );
   }

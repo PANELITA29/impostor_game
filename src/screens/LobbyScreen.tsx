@@ -2,6 +2,7 @@ import React from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { Button, Card, Badge } from '../components/ui';
 import { PlayerChip } from '../components/gameplay/PlayerChip';
+import { CategoryIconBadge } from '../components/gameplay/CategoryVisual';
 import type { RoundDuration } from '../types/game';
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
   Check,
   Play,
   AlertTriangle,
+  Flame,
 } from 'lucide-react';
 
 export const LobbyScreen: React.FC = () => {
@@ -29,6 +31,7 @@ export const LobbyScreen: React.FC = () => {
     updatePlayerName,
     setImpostorCount,
     toggleChaosMode,
+    toggleFinalJudgmentMode,
     setRoundDuration,
     toggleCategorySelection,
     selectAllCategories,
@@ -237,6 +240,52 @@ export const LobbyScreen: React.FC = () => {
               </div>
             </div>
 
+            {/* El Juicio Final Toggle Card */}
+            <div
+              onClick={toggleFinalJudgmentMode}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleFinalJudgmentMode();
+                }
+              }}
+              aria-label={`El Juicio Final: ${settings.finalJudgmentMode ? 'Activado' : 'Desactivado'}`}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
+                settings.finalJudgmentMode
+                  ? 'bg-accent-impostor/10 border-accent-impostor shadow-[0_0_20px_rgba(var(--color-accent-impostor),0.25)]'
+                  : 'bg-elevated/40 border-elevated hover:border-accent-impostor/40'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Flame className={`w-4 h-4 ${settings.finalJudgmentMode ? 'text-accent-impostor' : 'text-text-secondary'}`} />
+                    <span className="font-headline font-bold text-sm text-text-primary">
+                      El Juicio Final
+                    </span>
+                    <Badge variant={settings.finalJudgmentMode ? 'impostor' : 'neutral'} size="sm">
+                      {settings.finalJudgmentMode ? 'ACTIVO' : 'OFF'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    Si descubren al impostor, puede intentar adivinar la palabra para robar la victoria.
+                  </p>
+                </div>
+
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors shrink-0 ${
+                    settings.finalJudgmentMode
+                      ? 'bg-accent-impostor border-accent-impostor text-canvas'
+                      : 'border-elevated bg-canvas'
+                  }`}
+                >
+                  {settings.finalJudgmentMode && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                </div>
+              </div>
+            </div>
+
             {/* Duración de Ronda */}
             <div className="space-y-2">
               <span className="font-headline font-bold text-sm text-text-primary flex items-center gap-2">
@@ -321,30 +370,35 @@ export const LobbyScreen: React.FC = () => {
                           : 'bg-elevated/40 border-elevated/70 hover:border-elevated text-text-secondary opacity-75'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-headline font-bold text-sm text-text-primary leading-tight line-clamp-1">
-                          {cat.name}
-                        </span>
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-accent-primary border-accent-primary text-canvas'
-                              : 'border-elevated bg-canvas'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <CategoryIconBadge category={cat} size="sm" />
+                          <div className="min-w-0">
+                            <span className="font-headline font-bold text-sm text-text-primary leading-tight line-clamp-1 block">
+                              {cat.name}
+                            </span>
+                            <span className="text-xs text-text-secondary block">
+                              {cat.words.length} palabras
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2">
-                        <span className="text-xs text-text-secondary">
-                          {cat.words.length} palabras
-                        </span>
-                        {cat.isCustom && (
-                          <Badge variant="chaos" size="sm">
-                            Propia
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {cat.isCustom && (
+                            <Badge variant="chaos" size="sm">
+                              Propia
+                            </Badge>
+                          )}
+                          <div
+                            className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 transition-colors ${
+                              isSelected
+                                ? 'bg-accent-primary border-accent-primary text-canvas'
+                                : 'border-elevated bg-canvas'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -368,8 +422,8 @@ export const LobbyScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Bottom Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-elevated/80 bg-canvas/95 backdrop-blur-md py-3 px-4">
+      {/* Sticky Bottom Footer with Safe Area Support */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-elevated/80 bg-canvas/95 backdrop-blur-md pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-4">
         {errorMessage && (
           <div className="mx-auto max-w-[960px] mb-2 p-3 rounded-xl bg-accent-impostor/15 border border-accent-impostor/40 flex items-center justify-between text-xs text-accent-impostor font-semibold animate-in fade-in duration-150">
             <div className="flex items-center gap-2">

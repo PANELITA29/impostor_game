@@ -1,4 +1,4 @@
-import type { GameLanguage } from '../types/game';
+import type { GameLanguage, GameTheme } from '../types/game';
 
 export interface Translations {
   dock: {
@@ -19,6 +19,8 @@ export interface Translations {
     sfx: string;
     music: string;
     mute: string;
+    debateMusic: string;
+    debateMusicDesc: string;
     gameplayTools: string;
     haptics: string;
     hapticsDesc: string;
@@ -40,12 +42,7 @@ export interface Translations {
     version: string;
     backToGame: string;
   };
-  themes: {
-    midnight: { name: string; desc: string };
-    cyberpunk: { name: string; desc: string };
-    crimson: { name: string; desc: string };
-    amethyst: { name: string; desc: string };
-  };
+  themes: Record<GameTheme, { name: string; desc: string }>;
   rules: {
     title: string;
     step1Title: string;
@@ -82,6 +79,8 @@ export const TRANSLATIONS: Record<GameLanguage, Translations> = {
       sfx: 'Efectos de Sonido (SFX)',
       music: 'Música Ambiental (BGM)',
       mute: 'Silenciar todo el audio',
+      debateMusic: 'Música del Debate',
+      debateMusicDesc: 'Elige la pista musical que sonará mientras el grupo debate',
       gameplayTools: 'Herramientas de Partida',
       haptics: 'Vibración y Respuesta Háptica',
       hapticsDesc: 'Vibrar al revelar rol y al pasar el dispositivo en móviles',
@@ -110,15 +109,31 @@ export const TRANSLATIONS: Record<GameLanguage, Translations> = {
       },
       cyberpunk: {
         name: 'Cyberpunk Neon',
-        desc: 'Cian eléctrico y magenta sobre obsidiana futurista',
+        desc: 'Cian eléctrico y amarillo láser de alta tecnología',
       },
       crimson: {
         name: 'Crimson Noir',
-        desc: 'Rojo sangre y ámbar dorado con sombras oscuras',
+        desc: 'Rojo sangre y fuego volcánico sobre obsidiana',
       },
       amethyst: {
         name: 'Amethyst Twilight',
-        desc: 'Lavanda místico y aguamarina sobre terciopelo',
+        desc: 'Lavanda místico y cian estelar sobre terciopelo',
+      },
+      matrix: {
+        name: 'Matrix Protocol',
+        desc: 'Verde fósforo puro y cian digital de terminal',
+      },
+      solar: {
+        name: 'Solar Flare',
+        desc: 'Oro solar brillante y naranja corona incandescente',
+      },
+      arctic: {
+        name: 'Arctic Glaciar',
+        desc: 'Azul glaciar helado y turquesa polar sobre abismo',
+      },
+      synthwave: {
+        name: 'Synthwave 80s',
+        desc: 'Magenta neón retro y aguamarina outrun sobre noche',
       },
     },
     rules: {
@@ -155,6 +170,8 @@ export const TRANSLATIONS: Record<GameLanguage, Translations> = {
       sfx: 'Sound Effects (SFX)',
       music: 'Ambient Music (BGM)',
       mute: 'Mute all audio',
+      debateMusic: 'Debate Music Track',
+      debateMusicDesc: 'Choose the soundtrack that plays while players debate',
       gameplayTools: 'Gameplay Tools',
       haptics: 'Haptic Feedback & Vibration',
       hapticsDesc: 'Vibrate on role reveal and device hand-off on mobile',
@@ -183,15 +200,31 @@ export const TRANSLATIONS: Record<GameLanguage, Translations> = {
       },
       cyberpunk: {
         name: 'Cyberpunk Neon',
-        desc: 'Electric cyan & neon magenta on dark obsidian',
+        desc: 'Electric cyan & laser cyber yellow on high-tech dark',
       },
       crimson: {
         name: 'Crimson Noir',
-        desc: 'Blood red & ember gold with dark shadows',
+        desc: 'Blood red & ember fire on dark obsidian',
       },
       amethyst: {
         name: 'Amethyst Twilight',
-        desc: 'Mystic lavender & aqua cyan on deep velvet',
+        desc: 'Mystic lavender & stellar cyan on deep velvet',
+      },
+      matrix: {
+        name: 'Matrix Protocol',
+        desc: 'Pure phosphor terminal green & digital cyan',
+      },
+      solar: {
+        name: 'Solar Flare',
+        desc: 'Brilliant solar gold & incandescent corona orange',
+      },
+      arctic: {
+        name: 'Arctic Glaciar',
+        desc: 'Frozen glacier blue & polar turquoise on abyss',
+      },
+      synthwave: {
+        name: 'Synthwave 80s',
+        desc: 'Retro neon magenta & outrun aqua on night purple',
       },
     },
     rules: {
@@ -228,23 +261,23 @@ export const THEME_CONFIG = {
     id: 'cyberpunk' as const,
     name: 'Cyberpunk Neon',
     primary: '#00F0FF',
-    secondary: '#FF007F',
-    canvas: '#080712',
+    secondary: '#FFE600',
+    canvas: '#080716',
     balatro: {
       color1: '#00F0FF',
-      color2: '#FF007F',
-      color3: '#04030A',
+      color2: '#FFE600',
+      color3: '#050410',
     },
   },
   crimson: {
     id: 'crimson' as const,
     name: 'Crimson Noir',
     primary: '#FF3355',
-    secondary: '#FF9500',
+    secondary: '#FF8800',
     canvas: '#0E0608',
     balatro: {
       color1: '#FF3355',
-      color2: '#FF9500',
+      color2: '#FF8800',
       color3: '#070204',
     },
   },
@@ -258,6 +291,54 @@ export const THEME_CONFIG = {
       color1: '#B388FF',
       color2: '#00E5FF',
       color3: '#06030E',
+    },
+  },
+  matrix: {
+    id: 'matrix' as const,
+    name: 'Matrix Protocol',
+    primary: '#00FF66',
+    secondary: '#38BDF8',
+    canvas: '#040A05',
+    balatro: {
+      color1: '#00FF66',
+      color2: '#38BDF8',
+      color3: '#020603',
+    },
+  },
+  solar: {
+    id: 'solar' as const,
+    name: 'Solar Flare',
+    primary: '#FFB800',
+    secondary: '#FB923C',
+    canvas: '#0F0C06',
+    balatro: {
+      color1: '#FFB800',
+      color2: '#FB923C',
+      color3: '#080603',
+    },
+  },
+  arctic: {
+    id: 'arctic' as const,
+    name: 'Arctic Glaciar',
+    primary: '#38BDF8',
+    secondary: '#2DD4BF',
+    canvas: '#060C16',
+    balatro: {
+      color1: '#38BDF8',
+      color2: '#2DD4BF',
+      color3: '#03070E',
+    },
+  },
+  synthwave: {
+    id: 'synthwave' as const,
+    name: 'Synthwave 80s',
+    primary: '#EC4899',
+    secondary: '#06B6D4',
+    canvas: '#0D0714',
+    balatro: {
+      color1: '#EC4899',
+      color2: '#06B6D4',
+      color3: '#07030C',
     },
   },
 };

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { audioManager } from '../audio/audioManager';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { TRANSLATIONS, THEME_CONFIG } from '../utils/i18n';
+import { DEBATE_MUSIC_TRACKS } from '../audio/musicTracks';
 import type { GameTheme, GameLanguage } from '../types/game';
 import { Card, Button, Modal } from '../components/ui';
 import {
@@ -21,6 +22,9 @@ import {
   Check,
   ArrowLeft,
   ShieldCheck,
+  Music,
+  Play,
+  Square,
 } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
@@ -43,10 +47,34 @@ export const SettingsScreen: React.FC = () => {
   const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
   const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = audioManager.subscribePreview((trackId) => {
+      setPreviewingTrackId(trackId);
+    });
+
+    return () => {
+      unsubscribe();
+      audioManager.stopPreview();
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 2500);
+  };
+
+  const handleSelectDebateTrack = (trackId: string) => {
+    audioManager.playSfx('tap');
+    updatePreferences({ debateMusicTrack: trackId });
+    const track = DEBATE_MUSIC_TRACKS.find((t) => t.id === trackId);
+    showToast(`Música: ${track?.title || trackId}`);
+  };
+
+  const handleTogglePreview = (e: React.MouseEvent, trackId: string) => {
+    e.stopPropagation();
+    audioManager.togglePreviewTrack(trackId);
   };
 
   const handleLanguageChange = (lang: GameLanguage) => {
@@ -87,7 +115,16 @@ export const SettingsScreen: React.FC = () => {
     showToast('Ajustes de fábrica restablecidos');
   };
 
-  const themes: GameTheme[] = ['midnight', 'cyberpunk', 'crimson', 'amethyst'];
+  const themes: GameTheme[] = [
+    'midnight',
+    'cyberpunk',
+    'crimson',
+    'amethyst',
+    'matrix',
+    'solar',
+    'arctic',
+    'synthwave',
+  ];
 
   return (
     <div className="flex-1 flex flex-col justify-between max-w-2xl mx-auto w-full pb-10 space-y-6 animate-in fade-in duration-200">
@@ -317,6 +354,100 @@ export const SettingsScreen: React.FC = () => {
                 className="w-full h-2 bg-canvas rounded-lg appearance-none cursor-pointer accent-accent-primary disabled:opacity-40"
               />
             </div>
+          </div>
+        </Card>
+
+        {/* =========================================================================
+            3B. SECCIÓN: MÚSICA DEL DEBATE (Selección de pistas con previsualización)
+            ========================================================================= */}
+        <Card variant="default" className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-elevated/40">
+            <div className="flex items-center gap-2.5">
+              <Music className="w-5 h-5 text-accent-primary" />
+              <div>
+                <h3 className="font-headline font-bold text-sm text-text-primary">
+                  {t.debateMusic}
+                </h3>
+                <p className="text-[11px] text-text-secondary">
+                  {t.debateMusicDesc}
+                </p>
+              </div>
+            </div>
+
+            {previewingTrackId && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-primary/20 text-accent-primary text-[10px] font-code font-bold animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-ping" />
+                Escuchando muestra
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {DEBATE_MUSIC_TRACKS.map((track) => {
+              const isSelected = preferences.debateMusicTrack === track.id;
+              const isPreviewing = previewingTrackId === track.id;
+
+              return (
+                <div
+                  key={track.id}
+                  onClick={() => handleSelectDebateTrack(track.id)}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                    isSelected
+                      ? 'bg-accent-primary/10 border-accent-primary shadow-[0_0_16px_rgba(0,229,160,0.18)]'
+                      : 'bg-canvas/50 border-elevated/70 hover:border-elevated hover:bg-elevated/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? 'bg-accent-primary/20 text-accent-primary'
+                          : 'bg-elevated/80 text-text-secondary'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                      ) : (
+                        <Music className="w-4 h-4" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-headline font-bold text-xs text-text-primary truncate">
+                          {track.title}
+                        </h4>
+                        <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-elevated/80 font-code text-text-secondary shrink-0">
+                          {track.tag}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary truncate">
+                        {track.artist}
+                      </p>
+                    </div>
+                  </div>
+
+                  {track.type !== 'none' && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleTogglePreview(e, track.id)}
+                      className={`p-2 rounded-lg border transition-all shrink-0 ${
+                        isPreviewing
+                          ? 'bg-accent-primary text-canvas border-accent-primary shadow-[0_0_12px_rgba(0,229,160,0.4)]'
+                          : 'bg-elevated/60 text-text-secondary border-elevated hover:text-text-primary hover:border-accent-primary/50'
+                      }`}
+                      title={isPreviewing ? 'Detener muestra' : 'Escuchar muestra'}
+                    >
+                      {isPreviewing ? (
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                      ) : (
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
 
