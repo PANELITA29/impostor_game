@@ -18,16 +18,12 @@ export const ResolutionScreen: React.FC = () => {
   const { roundState, startRound, setScreen } = useGameStore();
 
   React.useEffect(() => {
-    // If impostors won, play the RDR2 Low Honor sound effect! Otherwise fart on innocent reveal
-    const timer = setTimeout(() => {
-      if (roundState?.voteResult && !roundState.voteResult.innocentsWon) {
-        audioManager.playSfx('impostor_win');
-      } else {
-        audioManager.playSfx('fart');
-      }
-    }, 120);
-
-    return () => clearTimeout(timer);
+    // If impostors won, play the RDR2 Low Honor sound effect immediately! Otherwise fart on innocent reveal
+    if (roundState?.voteResult && !roundState.voteResult.innocentsWon) {
+      audioManager.playSfx('impostor_win');
+    } else {
+      audioManager.playSfx('fart');
+    }
   }, []);
 
   if (!roundState) {
