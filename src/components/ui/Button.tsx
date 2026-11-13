@@ -56,18 +56,28 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const widthStyle = fullWidth ? 'w-full' : '';
     const ctaStyle = isCta ? 'btn-cta-pulse' : '';
+    const lastSoundPlayedRef = React.useRef(0);
+
+    const playTapSound = () => {
+      const now = Date.now();
+      // Guard against double sound between pointerdown and click events
+      if (now - lastSoundPlayedRef.current > 120) {
+        lastSoundPlayedRef.current = now;
+        audioManager.playSfx('tap');
+      }
+    };
 
     const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
       if (!disabled && e.button === 0) {
-        audioManager.playSfx('tap');
+        playTapSound();
       }
       props.onPointerDown?.(e);
     };
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      // Handles keyboard activation (Enter / Space) or environments without pointer events
+      // Handles keyboard activation (Enter / Space) or environments where pointerdown was skipped
       if (!disabled) {
-        audioManager.playSfx('tap');
+        playTapSound();
       }
       onClick?.(e);
     };

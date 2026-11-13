@@ -223,8 +223,8 @@ class AudioManager {
     // 1. Button click sound (Minecraft Button / Pressure Plate)
     if (type === 'tap') {
       const nowMs = Date.now();
-      if (nowMs - this.lastTapTimestamp < 20) {
-        return; // Debounce rapid simultaneous calls
+      if (nowMs - this.lastTapTimestamp < 90) {
+        return; // Debounce rapid simultaneous calls and event cascades
       }
       this.lastTapTimestamp = nowMs;
 
